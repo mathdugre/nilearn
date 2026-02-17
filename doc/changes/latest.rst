@@ -5,6 +5,17 @@
 0.14.0.dev
 ==========
 
+HIGHLIGHTS
+----------
+
+.. warning::
+
+ | **Minimum supported versions of the following packages have been bumped up:**
+ | - numpy -- 1.26.0
+ | - pandas -- 2.3.0
+ | - scikit-learn -- 1.5.0
+ | - scipy -- 1.11.0
+
 NEW
 ---
 
