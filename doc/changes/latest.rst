@@ -22,6 +22,8 @@ NEW
 Fixes
 -----
 
+- :bdg-secondary:`Maint` Allow local installation with ```uv sync`` (:gh:`6024` by `Mathieu Dugré`_)
+
 Enhancements
 ------------
 
