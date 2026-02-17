@@ -24,9 +24,6 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
     cancel-in-progress: true
 
-env:
-    MIN_PYTHON_VERSION: '3.10'
-
 jobs:
     test_install:
         if: github.repository == 'nilearn/nilearn'
@@ -45,7 +42,7 @@ jobs:
         -   name: Setup python
             uses: actions/setup-python@v6
             with:
-                python-version: ${{ env.MIN_PYTHON_VERSION }}
+                python-version: '3.10'
         -   name: Install dependencies for building Nilearn
             run: |
                 set -e
@@ -83,7 +80,7 @@ jobs:
         -   name: Setup python
             uses: actions/setup-python@v6
             with:
-                python-version: ${{ env.MIN_PYTHON_VERSION }}
+                python-version: '3.10'
         -   name: Test uv sync
             shell: bash {0}
             run: |
@@ -103,7 +100,7 @@ jobs:
         -   name: Setup python
             uses: actions/setup-python@v6
             with:
-                python-version: ${{ env.MIN_PYTHON_VERSION }}
+                python-version: '3.10'
 
         -   name: Check wheel size
             run: bash build_tools/github/wheel_size_check.sh
@@ -118,9 +115,9 @@ jobs:
                 python: ['3.13']
                 dependencies: [plotting]
                 include:
-                -   python: ${{ env.MIN_PYTHON_VERSION }}
+                -   python: '3.10'
                     dependencies: min_plotting
-                -   python: ${{ env.MIN_PYTHON_VERSION }}
+                -   python: '3.10'
                     dependencies: min
 
         name: check install size
