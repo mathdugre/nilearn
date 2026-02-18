@@ -64,7 +64,12 @@ def standardize_signal(
 
     signals = _detrend(signals, inplace=False) if detrend else signals.copy()
 
-    assert not isinstance(standardize, bool)
+    if isinstance(standardize, bool):
+        raise ValueError(
+            "The 'standardize' parameter should be either None, 'psc', or "
+            "'zscore_sample'. The boolean value is not accepted anymore. "
+            "Please update your code accordingly."
+        )
 
     if standardize is not None:
         check_parameter_in_allowed(
