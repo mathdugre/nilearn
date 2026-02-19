@@ -1,0 +1,44 @@
+---
+name: Complexity Check
+
+on:
+    push:
+        branches:
+        -   main
+        -   nilearn/**/*
+    pull_request:
+        branches:
+        -   '*'
+        paths:
+        -   nilearn/**/*
+
+env:
+    MAX_COMPLEXITY_ALLOWED: 25
+
+jobs:
+    check:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+        -   uses: actions/checkout@v4
+
+        -   name: Set up Python
+            uses: actions/setup-python@v5
+            with:
+                python-version: 3.x
+
+        -   name: Install complexipy
+            run: pip install complexipy>=5.0.0
+
+      # Check complexity against the existing snapshot
+        -   name: Check code complexity
+            run: complexipy nilearn --max-complexity-allowed ${{ env.MAX_COMPLEXITY_ALLOWED }} --snapshot-create
+
+      # Merge logic: Update the snapshot
+        -   name: Commit updated snapshot
+            if: github.event_name == 'push'
+            uses: stefanzweifel/git-auto-commit-action@v5
+            with:
+                commit_message: 'chore: update complexipy snapshot [skip ci]'
+                file_pattern: complexipy-snapshot.json
