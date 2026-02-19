@@ -2,10 +2,6 @@
 name: Complexity Check
 
 on:
-    push:
-        branches:
-        -   main
-        -   nilearn/**/*
     pull_request:
         branches:
         -   '*'
@@ -18,10 +14,20 @@ env:
 jobs:
     check:
         runs-on: ubuntu-latest
-        permissions:
-            contents: write
+        # The write permissions block is removed since we are no longer committing files.
         steps:
-        -   uses: actions/checkout@v4
+        # 1. Checkout the main branch to establish the baseline
+        -   name: Checkout main branch
+            uses: actions/checkout@v4
+            with:
+                ref: main
+                path: main_branch
+
+        # 2. Checkout the current branch/PR being tested
+        -   name: Checkout current branch
+            uses: actions/checkout@v4
+            with:
+                path: current_branch
 
         -   name: Set up Python
             uses: actions/setup-python@v5
@@ -31,14 +37,15 @@ jobs:
         -   name: Install complexipy
             run: pip install complexipy>=5.0.0
 
-      # Check complexity against the existing snapshot
-        -   name: Check code complexity
-            run: complexipy nilearn --max-complexity-allowed ${{ env.MAX_COMPLEXITY_ALLOWED }} --snapshot-create
+        # 3. Generate the snapshot on main and copy it to the current branch directory
+        -   name: Create snapshot from main
+            run: |
+                cd main_branch
+                complexipy nilearn --snapshot-create
+                cp complexipy-snapshot.json ../current_branch/
 
-      # Merge logic: Update the snapshot
-        -   name: Commit updated snapshot
-            if: github.event_name == 'push'
-            uses: stefanzweifel/git-auto-commit-action@v5
-            with:
-                commit_message: 'chore: update complexipy snapshot [skip ci]'
-                file_pattern: complexipy-snapshot.json
+        # 4. Evaluate the current branch against the copied main snapshot
+        -   name: Check code complexity
+            run: |
+                cd current_branch
+                complexipy nilearn --max-complexity-allowed ${{ env.MAX_COMPLEXITY_ALLOWED }}
