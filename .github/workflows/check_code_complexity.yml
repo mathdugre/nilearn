@@ -39,6 +39,7 @@ jobs:
 
         # 3. Generate the snapshot on main and copy it to the current branch directory
         -   name: Create snapshot from main
+            continue-on-error: true  # Prevent failure if complexity exceeds the threshold on main
             run: |
                 cd main_branch
                 complexipy nilearn --snapshot-create
