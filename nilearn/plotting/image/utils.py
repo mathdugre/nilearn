@@ -83,6 +83,66 @@ class _MNI152Template(SpatialImage):
         return "<MNI152Template>"
 
 
+def _load_mni152_template(anat_img, black_bg):
+    """Load MNI152 template."""
+    anat_img.load()
+    # We special-case the 'canonical anat', as we don't need
+    # to do a few transforms to it.
+    vmin = 0
+    vmax = anat_img.vmax
+    if black_bg == "auto":
+        black_bg = False
+    return anat_img, black_bg, vmin, vmax
+
+
+def _load_custom_anat(anat_img, dim, black_bg):
+    """Load custom anatomy image.
+
+    Compute vmin/vmax and black_bg, if needed.
+    """
+    anat_img = check_niimg_3d(anat_img)
+    # Clean anat_img for non-finite values to avoid computing unnecessary
+    # border data values.
+    data = safe_get_data(anat_img, ensure_finite=True)
+    anat_img = new_img_like(anat_img, data, affine=anat_img.affine)
+
+    vmin = None
+    vmax = None
+    if dim or black_bg == "auto":
+        # We need to inspect the values of the image
+        vmin = np.nanmin(data)
+        vmax = np.nanmax(data)
+    if black_bg == "auto":
+        # Guess if the background is rather black or light based on
+        # the values of voxels near the border
+        background = np.median(get_border_data(data, 2))
+        black_bg = not (background > 0.5 * (vmin + vmax))
+    return anat_img, black_bg, vmin, vmax
+
+
+def _apply_dimming(dim, black_bg, vmin, vmax):
+    """Apply dimming to vmin/vmax."""
+    if dim != "auto" and not isinstance(dim, numbers.Number):
+        raise ValueError(
+            "The input given for 'dim' needs to be a float. "
+            f"You provided dim={dim} in {dim.__class__.__name__}."
+        )
+
+    vmean = 0.5 * (vmin + vmax)
+    ptp = 0.5 * (vmax - vmin)
+
+    if black_bg:
+        if not isinstance(dim, numbers.Number):
+            dim = 0.8
+        vmax = vmean + (1 + dim) * ptp
+    else:
+        if not isinstance(dim, numbers.Number):
+            dim = 0.6
+        vmin = 0.5 * (2 - dim) * vmean - (1 + dim) * ptp
+
+    return vmin, vmax
+
+
 # The constant that we use as a default in functions
 MNI152TEMPLATE = _MNI152Template()
 
@@ -98,42 +158,15 @@ def load_anat(anat_img=MNI152TEMPLATE, dim="auto", black_bg="auto"):
         return anat_img, black_bg, vmin, vmax
 
     if anat_img is MNI152TEMPLATE:
-        anat_img.load()
-        # We special-case the 'canonical anat', as we don't need
-        # to do a few transforms to it.
-        vmin = 0
-        vmax = anat_img.vmax
-        if black_bg == "auto":
-            black_bg = False
+        anat_img, black_bg, vmin, vmax = _load_mni152_template(
+            anat_img, black_bg
+        )
     else:
-        anat_img = check_niimg_3d(anat_img)
-        # Clean anat_img for non-finite values to avoid computing unnecessary
-        # border data values.
-        data = safe_get_data(anat_img, ensure_finite=True)
-        anat_img = new_img_like(anat_img, data, affine=anat_img.affine)
-        if dim or black_bg == "auto":
-            # We need to inspect the values of the image
-            vmin = np.nanmin(data)
-            vmax = np.nanmax(data)
-        if black_bg == "auto":
-            # Guess if the background is rather black or light based on
-            # the values of voxels near the border
-            background = np.median(get_border_data(data, 2))
-            black_bg = not (background > 0.5 * (vmin + vmax))
+        anat_img, black_bg, vmin, vmax = _load_custom_anat(
+            anat_img, dim, black_bg
+        )
+
     if dim:
-        if dim != "auto" and not isinstance(dim, numbers.Number):
-            raise ValueError(
-                "The input given for 'dim' needs to be a float. "
-                f"You provided dim={dim} in {dim.__class__.__name__}."
-            )
-        vmean = 0.5 * (vmin + vmax)
-        ptp = 0.5 * (vmax - vmin)
-        if black_bg:
-            if not isinstance(dim, numbers.Number):
-                dim = 0.8
-            vmax = vmean + (1 + dim) * ptp
-        else:
-            if not isinstance(dim, numbers.Number):
-                dim = 0.6
-            vmin = 0.5 * (2 - dim) * vmean - (1 + dim) * ptp
+        vmin, vmax = _apply_dimming(dim, black_bg, vmin, vmax)
+
     return anat_img, black_bg, vmin, vmax
