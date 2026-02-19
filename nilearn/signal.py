@@ -64,7 +64,6 @@ def standardize_signal(
 
     signals = _detrend(signals, inplace=False) if detrend else signals.copy()
 
-
     if standardize is None:
         return signals
 
